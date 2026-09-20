@@ -1,7 +1,7 @@
 {
   "name": "Line File Saver Web",
   "short_name": "FileSaver",
-  "start_url": "/YOUR_REPOSITORY_NAME/index.html",
+  "start_url": "/saver/index.html",
   "display": "standalone",
   "background_color": "#f5f5f5",
   "theme_color": "#007bff",
