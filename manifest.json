@@ -13,7 +13,7 @@
     }
   ],
   "share_target": {
-    "action": "/YOUR_REPOSITORY_NAME/index.html",
+    "action": "/saver/index.html",
     "method": "GET",
     "params": {
       "title": "title",
