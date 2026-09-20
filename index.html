@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Line File Saver (Web)</title>
+    <!-- マニフェストファイルの読み込み -->
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1 { font-size: 1.2rem; }
+        .card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 16px;
+        }
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 200px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        button:active { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <h1>Line File Saver (Web版)</h1>
+
+    <div class="card">
+        <h3>ステータス</h3>
+        <p id="status">ファイルを受け取るのを待っています...</p>
+    </div>
+
+    <div class="card" id="preview-card" style="display:none;">
+        <h3>ファイル内容プレビュー</h3>
+        <p id="file-name" style="font-weight: bold; color: #007bff;"></p>
+        <pre id="file-content"></pre>
+        <a id="download-link" download style="display:none;">
+            <button>このファイルを端末に保存</button>
+        </a>
+    </div>
+
+    <script>
+        // 共有機能（Web Share Target）でファイルが送られてきたときの処理
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // POSTリクエストまたはURLパラメータ経由で共有データを受け取る仕組みの処理
+            // ※本格的に動かすには Service Worker での POSTデータキャッチが必要になりますが、
+            //   まずはシンプルなファイル選択・動作確認用のサンプルとして組み立てています。
+        });
+
+        // 手動でファイルを選択して開く機能
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.style.marginTop = '10px';
+
+        const manualBtn = document.createElement('button');
+        manualBtn.textContent = 'ファイルを選択して開く';
+        manualBtn.onclick = () => fileInput.click();
+
+        document.body.appendChild(manualBtn);
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('status.textContent = 'ファイルを選択しました';
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('preview-card').style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target.result;
+                document.getElementById('file-content').textContent = text;
+
+                // ダウンロードリンクの作成
+                const blob = new Blob([text], { type: file.type });
+                const url = URL.createObjectURL(blob);
+                const dlLink = document.getElementById('download-link');
+                dlLink.href = url;
+                dlLink.download = file.name;
+                dlLink.style.display = 'inline-block';
+            };
+            reader.readAsText(file);
+        };
+    </script>
+</body>
+</html>
