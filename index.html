@@ -61,46 +61,9 @@
     </div>
 
     <script>
-        // Service WorkerへファイルをPOST（またはFetch）送信する関数
-        async function sendFileToServiceWorker(file) {
-            if (!navigator.serviceWorker.controller) {
-                console.log('Service Workerのコントローラーがまだ有効ではありません。');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            try {
-                // Service Worker側でfetchイベントとして受け取れるURLへ送信
-                const response = await fetch('/saver/sw-endpoint', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const resultText = await response.text();
-                console.log('Service Workerからの応答:', resultText);
-            } catch (error) {
-                console.error('Service Workerへの送信に失敗しました:', error);
-            }
-        }
-
-        // 1. 手動でファイルを選択して開く機能のセットアップ
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.style.marginTop = '10px';
-
-        const manualBtn = document.createElement('button');
-        manualBtn.textContent = 'ファイルを選択して開く';
-        manualBtn.onclick = () => fileInput.click();
-
-        document.body.appendChild(manualBtn);
-
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            document.getElementById('status').textContent = 'ファイルを選択しました';
+        // ファイルのプレビューとダウンロードリンクを生成する共通関数
+        function displayFile(file) {
+            document.getElementById('status').textContent = 'ファイルを受信しました';
             document.getElementById('file-name').textContent = file.name;
             document.getElementById('preview-card').style.display = 'block';
 
@@ -118,14 +81,12 @@
                 dlLink.style.display = 'inline-block';
             };
             reader.readAsText(file);
+        }
 
-            // 追加：選択したファイルをService Workerに送信する処理を呼び出し
-            sendFileToServiceWorker(file);
-        };
-
-        // 2. Service Worker の登録処理（リポジトリ名を考慮したパス指定）
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
+        // 1. 起動時やリダイレクト時に、Service Workerから共有ファイルがないかチェックする処理
+        window.addEventListener('load', async () => {
+            if ('serviceWorker' in navigator) {
+                // Service Worker の登録
                 navigator.serviceWorker.register('/saver/service-worker.js')
                     .then((reg) => {
                         console.log('Service Worker 登録成功:', reg.scope);
@@ -133,8 +94,44 @@
                     .catch((err) => {
                         console.log('Service Worker 登録失敗:', err);
                     });
-            });
-        }
+            }
+
+            // Web Share Target経由で渡されたファイルがキャッシュにあるか確認
+            try {
+                const cache = await caches.open('shared-file-cache');
+                const res = await cache.match('/saver/latest-file');
+                if (res) {
+                    const fileName = decodeURIComponent(res.headers.get('X-File-Name') || 'shared_file.txt');
+                    const blob = await res.blob();
+                    const file = new File([blob], fileName, { type: blob.type });
+
+                    // ファイルを画面に表示
+                    displayFile(file);
+
+                    // 一度読み込んだらキャッシュから削除する
+                    await cache.delete('/saver/latest-file');
+                }
+            } catch (e) {
+                console.error('共有ファイルの取得に失敗しました:', e);
+            }
+        });
+
+        // 2. 手動でファイルを選択して開く機能のセットアップ
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.style.marginTop = '10px';
+
+        const manualBtn = document.createElement('button');
+        manualBtn.textContent = 'ファイルを選択して開く';
+        manualBtn.onclick = () => fileInput.click();
+
+        document.body.appendChild(manualBtn);
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            displayFile(file);
+        };
     </script>
 </body>
 </html>
