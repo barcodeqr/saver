@@ -27,13 +27,18 @@ async function handleShareTarget(request) {
       
       // 1. 共有されたファイルを後から画面（index.html）で読み込めるようにCache APIに保存
       const cache = await caches.open('shared-file-cache');
-      // ダミーのリクエストURLを作ってファイルをキャッシュに保存する
-      await cache.put('/saver/latest-file', new Response(file, {
-        headers: {
-          'Content-Type': file.type,
-          'X-File-Name': encodeURIComponent(file.name)
-        }
-      }));
+      
+      // ファイルをArrayBufferとして確実に読み込んでからキャッシュに保存する
+      const arrayBuffer = await file.arrayBuffer();
+      const headers = new Headers({
+        'Content-Type': file.type || 'application/octet-stream',
+        'X-File-Name': encodeURIComponent(file.name)
+      });
+
+      await cache.put('/saver/latest-file', new Response(arrayBuffer, { headers }));
+      
+      // キャッシュの書き込みが確実に終わるのを少し待つ
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     // 2. 処理が終わったら、アプリのメイン画面（index.html）へリダイレクトする
