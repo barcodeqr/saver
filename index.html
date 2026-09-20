@@ -61,6 +61,30 @@
     </div>
 
     <script>
+        // Service WorkerへファイルをPOST（またはFetch）送信する関数
+        async function sendFileToServiceWorker(file) {
+            if (!navigator.serviceWorker.controller) {
+                console.log('Service Workerのコントローラーがまだ有効ではありません。');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // Service Worker側でfetchイベントとして受け取れるURLへ送信
+                const response = await fetch('/saver/sw-endpoint', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const resultText = await response.text();
+                console.log('Service Workerからの応答:', resultText);
+            } catch (error) {
+                console.error('Service Workerへの送信に失敗しました:', error);
+            }
+        }
+
         // 1. 手動でファイルを選択して開く機能のセットアップ
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
@@ -94,6 +118,9 @@
                 dlLink.style.display = 'inline-block';
             };
             reader.readAsText(file);
+
+            // 追加：選択したファイルをService Workerに送信する処理を呼び出し
+            sendFileToServiceWorker(file);
         };
 
         // 2. Service Worker の登録処理（リポジトリ名を考慮したパス指定）
