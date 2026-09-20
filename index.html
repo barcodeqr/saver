@@ -60,43 +60,46 @@
         </a>
     </div>
 
-    <script>
+<script>
         // ファイルのプレビューとダウンロードリンクを生成する共通関数
         function displayFile(file) {
             document.getElementById('status').textContent = 'ファイルを受信しました！';
             document.getElementById('file-name').textContent = file.name;
             document.getElementById('preview-card').style.display = 'block';
 
+            // 1. ファイルから直接ダウンロードリンクを作成する（画像やPDFもこれで完璧にダウンロードできます）
+            const url = URL.createObjectURL(file);
+            const dlLink = document.getElementById('download-link');
+            dlLink.href = url;
+            dlLink.download = file.name;
+            dlLink.style.display = 'inline-block';
+
+            // 2. テキストファイルのときだけプレビューに文字を表示する（オプション）
             const reader = new FileReader();
             reader.onload = (event) => {
-                const text = event.target.result;
-                document.getElementById('file-content').textContent = text;
-
-                // ダウンロードリンクの作成
-                const blob = new Blob([text], { type: file.type });
-                const url = URL.createObjectURL(blob);
-                const dlLink = document.getElementById('download-link');
-                dlLink.href = url;
-                dlLink.download = file.name;
-                dlLink.style.display = 'inline-block';
+                // テキストとして読めた場合のみプレビューに表示
+                document.getElementById('file-content').textContent = event.target.result;
             };
-            reader.readAsText(file);
+            reader.onerror = () => {
+                document.getElementById('file-content').textContent = '（バイナリファイルのためプレビュー表示はできませんが、ダウンロードは可能です）';
+            };
+            
+            // テキストとしての読み込みを試みる（失敗してもダウンロードには影響しません）
+            try {
+                reader.readAsText(file);
+            } catch (e) {
+                document.getElementById('file-content').textContent = '（プレビュー非対応のファイル形式です）';
+            }
         }
 
-        // 1. ページ読み込み時の処理（Service Worker登録 ＆ 共有ファイルの受け取り）
+        // --- 以降の window.load などのコードはそのまま変えずに使えます ---
         window.addEventListener('load', async () => {
-            // Service Worker の登録
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/saver/service-worker.js')
-                    .then((reg) => {
-                        console.log('Service Worker 登録成功:', reg.scope);
-                    })
-                    .catch((err) => {
-                        console.log('Service Worker 登録失敗:', err);
-                    });
+                    .then((reg) => { console.log('Service Worker 登録成功:', reg.scope); })
+                    .catch((err) => { console.log('Service Worker 登録失敗:', err); });
             }
 
-            // Web Share Target経由で渡されたファイルがキャッシュにあるか確認して取得する
             try {
                 const cache = await caches.open('shared-file-cache');
                 const res = await cache.match('/saver/latest-file');
@@ -105,10 +108,7 @@
                     const blob = await res.blob();
                     const file = new File([blob], fileName, { type: blob.type });
 
-                    // 取得したファイルを画面に表示・処理する
                     displayFile(file);
-
-                    // 一度読み込んだらキャッシュから削除しておく
                     await cache.delete('/saver/latest-file');
                 }
             } catch (e) {
@@ -116,7 +116,7 @@
             }
         });
 
-        // 2. 手動でファイルを選択して開く機能のセットアップ
+        // 手動でファイルを選択して開く機能
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.style.marginTop = '10px';
