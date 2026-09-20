@@ -96,10 +96,10 @@
             reader.readAsText(file);
         };
 
-        // 2. Service Worker の登録処理（PWAのインストールに必須）
+        // 2. Service Worker の登録処理（リポジトリ名を考慮したパス指定）
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
+                navigator.serviceWorker.register('/YOUR_REPOSITORY_NAME/service-worker.js')
                     .then((reg) => {
                         console.log('Service Worker 登録成功:', reg.scope);
                     })
