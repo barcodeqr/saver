@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Line File Saver (Web)</title>
+    <title>LINE File Saver (Web)</title>
     <!-- マニフェストファイルの読み込み -->
     <link rel="manifest" href="manifest.json">
     <style>
@@ -63,7 +63,7 @@
     <script>
         // ファイルのプレビューとダウンロードリンクを生成する共通関数
         function displayFile(file) {
-            document.getElementById('status').textContent = 'ファイルを受信しました';
+            document.getElementById('status').textContent = 'ファイルを受信しました！';
             document.getElementById('file-name').textContent = file.name;
             document.getElementById('preview-card').style.display = 'block';
 
@@ -83,10 +83,10 @@
             reader.readAsText(file);
         }
 
-        // 1. 起動時やリダイレクト時に、Service Workerから共有ファイルがないかチェックする処理
+        // 1. ページ読み込み時の処理（Service Worker登録 ＆ 共有ファイルの受け取り）
         window.addEventListener('load', async () => {
+            // Service Worker の登録
             if ('serviceWorker' in navigator) {
-                // Service Worker の登録
                 navigator.serviceWorker.register('/saver/service-worker.js')
                     .then((reg) => {
                         console.log('Service Worker 登録成功:', reg.scope);
@@ -96,7 +96,7 @@
                     });
             }
 
-            // Web Share Target経由で渡されたファイルがキャッシュにあるか確認
+            // Web Share Target経由で渡されたファイルがキャッシュにあるか確認して取得する
             try {
                 const cache = await caches.open('shared-file-cache');
                 const res = await cache.match('/saver/latest-file');
@@ -105,10 +105,10 @@
                     const blob = await res.blob();
                     const file = new File([blob], fileName, { type: blob.type });
 
-                    // ファイルを画面に表示
+                    // 取得したファイルを画面に表示・処理する
                     displayFile(file);
 
-                    // 一度読み込んだらキャッシュから削除する
+                    // 一度読み込んだらキャッシュから削除しておく
                     await cache.delete('/saver/latest-file');
                 }
             } catch (e) {
