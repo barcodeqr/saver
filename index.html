@@ -61,16 +61,7 @@
     </div>
 
     <script>
-        // 共有機能（Web Share Target）でファイルが送られてきたときの処理
-        window.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // POSTリクエストまたはURLパラメータ経由で共有データを受け取る仕組みの処理
-            // ※本格的に動かすには Service Worker での POSTデータキャッチが必要になりますが、
-            //   まずはシンプルなファイル選択・動作確認用のサンプルとして組み立てています。
-        });
-
-        // 手動でファイルを選択して開く機能
+        // 1. 手動でファイルを選択して開く機能のセットアップ
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.style.marginTop = '10px';
@@ -85,7 +76,7 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            document.getElementById('status.textContent = 'ファイルを選択しました';
+            document.getElementById('status').textContent = 'ファイルを選択しました';
             document.getElementById('file-name').textContent = file.name;
             document.getElementById('preview-card').style.display = 'block';
 
@@ -104,6 +95,19 @@
             };
             reader.readAsText(file);
         };
+
+        // 2. Service Worker の登録処理（PWAのインストールに必須）
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then((reg) => {
+                        console.log('Service Worker 登録成功:', reg.scope);
+                    })
+                    .catch((err) => {
+                        console.log('Service Worker 登録失敗:', err);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
