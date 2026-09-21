@@ -92,8 +92,7 @@
             }
         }
 
-        // --- 以降の window.load などのコードはそのまま変えずに使えます ---
-        window.addEventListener('load', async () => {
+window.addEventListener('load', async () => {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/saver/service-worker.js')
                     .then((reg) => { console.log('Service Worker 登録成功:', reg.scope); })
@@ -101,18 +100,24 @@
             }
 
             try {
+                document.getElementById('status').textContent = 'キャッシュを確認中...'; // 追加
                 const cache = await caches.open('shared-file-cache');
                 const res = await cache.match('/saver/latest-file');
+                
                 if (res) {
+                    document.getElementById('status').textContent = 'キャッシュを発見しました！'; // 追加
                     const fileName = decodeURIComponent(res.headers.get('X-File-Name') || 'shared_file.txt');
                     const blob = await res.blob();
                     const file = new File([blob], fileName, { type: blob.type });
 
                     displayFile(file);
                     await cache.delete('/saver/latest-file');
+                } else {
+                    document.getElementById('status').textContent = 'キャッシュにファイルはありませんでした。'; // 追加
                 }
             } catch (e) {
                 console.error('共有ファイルの取得に失敗しました:', e);
+                document.getElementById('status').textContent = 'エラー: ' + e.message; // 追加
             }
         });
 
