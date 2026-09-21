@@ -44,7 +44,7 @@
 </head>
 <body>
 
-    <h1>Line File Saver (Web版)</h1>
+    <h1>LINE File Saver (Web版)</h1>
 
     <div class="card">
         <h3>ステータス</h3>
@@ -60,31 +60,29 @@
         </a>
     </div>
 
-<script>
+    <script>
         // ファイルのプレビューとダウンロードリンクを生成する共通関数
         function displayFile(file) {
             document.getElementById('status').textContent = 'ファイルを受信しました！';
             document.getElementById('file-name').textContent = file.name;
             document.getElementById('preview-card').style.display = 'block';
 
-            // 1. ファイルから直接ダウンロードリンクを作成する（画像やPDFもこれで完璧にダウンロードできます）
+            // ファイルから直接ダウンロードリンクを作成
             const url = URL.createObjectURL(file);
             const dlLink = document.getElementById('download-link');
             dlLink.href = url;
             dlLink.download = file.name;
             dlLink.style.display = 'inline-block';
 
-            // 2. テキストファイルのときだけプレビューに文字を表示する（オプション）
+            // テキストファイルのときだけプレビューに文字を表示
             const reader = new FileReader();
             reader.onload = (event) => {
-                // テキストとして読めた場合のみプレビューに表示
                 document.getElementById('file-content').textContent = event.target.result;
             };
             reader.onerror = () => {
                 document.getElementById('file-content').textContent = '（バイナリファイルのためプレビュー表示はできませんが、ダウンロードは可能です）';
             };
             
-            // テキストとしての読み込みを試みる（失敗してもダウンロードには影響しません）
             try {
                 reader.readAsText(file);
             } catch (e) {
@@ -92,32 +90,46 @@
             }
         }
 
-window.addEventListener('load', async () => {
+        // ページ読み込み時：バージョン付きでService Workerを登録 ＆ キャッシュ確認
+        window.addEventListener('load', async () => {
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/saver/service-worker.js')
+                // ?v=2 をつけて古いキャッシュの残りを強制クリアさせる
+                navigator.serviceWorker.register('service-worker.js?v=2')
                     .then((reg) => { console.log('Service Worker 登録成功:', reg.scope); })
                     .catch((err) => { console.log('Service Worker 登録失敗:', err); });
             }
 
             try {
-                document.getElementById('status').textContent = 'キャッシュを確認中...'; // 追加
+                document.getElementById('status').textContent = 'キャッシュを確認中...';
                 const cache = await caches.open('shared-file-cache');
                 const res = await cache.match('/saver/latest-file');
                 
                 if (res) {
-                    document.getElementById('status').textContent = 'キャッシュを発見しました！'; // 追加
-                    const fileName = decodeURIComponent(res.headers.get('X-File-Name') || 'shared_file.txt');
+                    document.getElementById('status').textContent = 'ファイルを発見しました！';
+                    
+                    let fileName = 'shared_file.txt';
+                    const rawFileName = res.headers.get('X-File-Name');
+                    if (rawFileName) {
+                        try {
+                            fileName = decodeURIComponent(rawFileName);
+                        } catch (e) {
+                            fileName = rawFileName;
+                        }
+                    }
+                    
                     const blob = await res.blob();
                     const file = new File([blob], fileName, { type: blob.type });
 
                     displayFile(file);
+                    
+                    // 読み込みが終わったらキャッシュから削除
                     await cache.delete('/saver/latest-file');
                 } else {
-                    document.getElementById('status').textContent = 'キャッシュにファイルはありませんでした。'; // 追加
+                    document.getElementById('status').textContent = 'ファイルを受け取るのを待っています...';
                 }
             } catch (e) {
                 console.error('共有ファイルの取得に失敗しました:', e);
-                document.getElementById('status').textContent = 'エラー: ' + e.message; // 追加
+                document.getElementById('status').textContent = 'エラー: ' + e.message;
             }
         });
 
