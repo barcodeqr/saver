@@ -32,7 +32,7 @@ async function handleShareTarget(request) {
         'X-File-Name': encodeURIComponent(file.name)
       });
 
-      await cache.put('/saver/latest-file', new Response(arrayBuffer, { headers }));
+      await cache.put('latest-file', new Response(arrayBuffer, { headers }));
       console.log('★ キャッシュへの保存が完了しました');
       
       await new Promise(resolve => setTimeout(resolve, 200));
