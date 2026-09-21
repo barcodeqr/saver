@@ -90,10 +90,10 @@
             }
         }
 
-// index.html の window.addEventListener('load', ...) 内
 window.addEventListener('load', async () => {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js?v=3') // バージョンを v3 に上げます
+        // ★ バージョンを v4 に上げてキャッシュを強制更新
+        navigator.serviceWorker.register('service-worker.js?v=4')
             .then((reg) => { console.log('Service Worker 登録成功:', reg.scope); })
             .catch((err) => { console.log('Service Worker 登録失敗:', err); });
     }
@@ -102,8 +102,9 @@ window.addEventListener('load', async () => {
         document.getElementById('status').textContent = 'キャッシュを確認中...';
         const cache = await caches.open('shared-file-cache');
         
-        // ★ パスを相対パスに変更
-        const res = await cache.match('latest-file');
+        // ★ 同じ絶対パスのRequestオブジェクトで一致させる
+        const cacheKey = new Request('/saver/latest-file');
+        const res = await cache.match(cacheKey);
         
         if (res) {
             document.getElementById('status').textContent = 'ファイルを発見しました！';
@@ -123,8 +124,8 @@ window.addEventListener('load', async () => {
 
             displayFile(file);
             
-            // ★ パスを相対パスに変更して削除
-            await cache.delete('latest-file');
+            // ★ 読み込みが終わったら削除
+            await cache.delete(cacheKey);
         } else {
             document.getElementById('status').textContent = 'ファイルを受け取るのを待っています...';
         }
