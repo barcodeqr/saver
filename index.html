@@ -90,48 +90,49 @@
             }
         }
 
-        // ページ読み込み時：バージョン付きでService Workerを登録 ＆ キャッシュ確認
-        window.addEventListener('load', async () => {
-            if ('serviceWorker' in navigator) {
-                // ?v=2 をつけて古いキャッシュの残りを強制クリアさせる
-                navigator.serviceWorker.register('service-worker.js?v=2')
-                    .then((reg) => { console.log('Service Worker 登録成功:', reg.scope); })
-                    .catch((err) => { console.log('Service Worker 登録失敗:', err); });
-            }
+// index.html の window.addEventListener('load', ...) 内
+window.addEventListener('load', async () => {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js?v=3') // バージョンを v3 に上げます
+            .then((reg) => { console.log('Service Worker 登録成功:', reg.scope); })
+            .catch((err) => { console.log('Service Worker 登録失敗:', err); });
+    }
 
-            try {
-                document.getElementById('status').textContent = 'キャッシュを確認中...';
-                const cache = await caches.open('shared-file-cache');
-                const res = await cache.match('/saver/latest-file');
-                
-                if (res) {
-                    document.getElementById('status').textContent = 'ファイルを発見しました！';
-                    
-                    let fileName = 'shared_file.txt';
-                    const rawFileName = res.headers.get('X-File-Name');
-                    if (rawFileName) {
-                        try {
-                            fileName = decodeURIComponent(rawFileName);
-                        } catch (e) {
-                            fileName = rawFileName;
-                        }
-                    }
-                    
-                    const blob = await res.blob();
-                    const file = new File([blob], fileName, { type: blob.type });
-
-                    displayFile(file);
-                    
-                    // 読み込みが終わったらキャッシュから削除
-                    await cache.delete('/saver/latest-file');
-                } else {
-                    document.getElementById('status').textContent = 'ファイルを受け取るのを待っています...';
+    try {
+        document.getElementById('status').textContent = 'キャッシュを確認中...';
+        const cache = await caches.open('shared-file-cache');
+        
+        // ★ パスを相対パスに変更
+        const res = await cache.match('latest-file');
+        
+        if (res) {
+            document.getElementById('status').textContent = 'ファイルを発見しました！';
+            
+            let fileName = 'shared_file.txt';
+            const rawFileName = res.headers.get('X-File-Name');
+            if (rawFileName) {
+                try {
+                    fileName = decodeURIComponent(rawFileName);
+                } catch (e) {
+                    fileName = rawFileName;
                 }
-            } catch (e) {
-                console.error('共有ファイルの取得に失敗しました:', e);
-                document.getElementById('status').textContent = 'エラー: ' + e.message;
             }
-        });
+            
+            const blob = await res.blob();
+            const file = new File([blob], fileName, { type: blob.type });
+
+            displayFile(file);
+            
+            // ★ パスを相対パスに変更して削除
+            await cache.delete('latest-file');
+        } else {
+            document.getElementById('status').textContent = 'ファイルを受け取るのを待っています...';
+        }
+    } catch (e) {
+        console.error('共有ファイルの取得に失敗しました:', e);
+        document.getElementById('status').textContent = 'エラー: ' + e.message;
+    }
+});
 
         // 手動でファイルを選択して開く機能
         const fileInput = document.createElement('input');
