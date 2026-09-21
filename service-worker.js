@@ -32,7 +32,9 @@ async function handleShareTarget(request) {
         'X-File-Name': encodeURIComponent(file.name)
       });
 
-      await cache.put('latest-file', new Response(arrayBuffer, { headers }));
+      // ★ 絶対パスのRequestオブジェクトをキーとして保存
+      const cacheKey = new Request('/saver/latest-file');
+      await cache.put(cacheKey, new Response(arrayBuffer, { headers }));
       console.log('★ キャッシュへの保存が完了しました');
       
       await new Promise(resolve => setTimeout(resolve, 200));
