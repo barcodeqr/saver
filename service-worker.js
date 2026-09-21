@@ -1,6 +1,25 @@
+// インストール時にすぐ有効化
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// ★この「fetch」のリスナーが抜けていたため、405エラーになっていました
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // manifest.json の share_target の action とパスを完全に一致させる
+  if (event.request.method === 'POST' && url.pathname === '/saver/share-handler') {
+    event.respondWith(handleShareTarget(event.request));
+  }
+});
+
 async function handleShareTarget(request) {
   try {
-    console.log('★ handleShareTarget が呼び出されました！'); // 追加
+    console.log('★ handleShareTarget が呼び出されました！');
     const formData = await request.formData();
     const file = formData.get('shared_file'); 
     
@@ -15,11 +34,11 @@ async function handleShareTarget(request) {
       });
 
       await cache.put('/saver/latest-file', new Response(arrayBuffer, { headers }));
-      console.log('★ キャッシュへの保存が完了しました'); // 追加
+      console.log('★ キャッシュへの保存が完了しました');
       
       await new Promise(resolve => setTimeout(resolve, 200));
     } else {
-      console.log('▲ 警告: shared_file が取得できませんでした'); // 追加
+      console.log('▲ 警告: shared_file が取得できませんでした');
     }
 
     return Response.redirect('/saver/index.html', 303);
