@@ -23,7 +23,7 @@
       "files": [
         {
           "name": "shared_file",
-          "accept": ["application/json", "text/plain", ".json", ".txt"]
+          "accept": ["application/json", ".json"]
         }
       ]
     }
