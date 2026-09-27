@@ -60,6 +60,12 @@
         </a>
     </div>
 
+    <div class="card" id="debug-card">
+        <h3>デバッグ情報（共有処理の記録）</h3>
+        <pre id="debug-content">まだ共有処理は実行されていません。</pre>
+        <button id="clear-debug-btn">この記録を消す</button>
+    </div>
+
     <script>
         // ファイルのプレビューとダウンロードリンクを生成する共通関数
         function displayFile(file) {
@@ -101,7 +107,15 @@ window.addEventListener('load', async () => {
     try {
         document.getElementById('status').textContent = 'キャッシュを確認中...';
         const cache = await caches.open('shared-file-cache');
-        
+
+        // デバッグ情報を先に表示（ファイルの有無に関わらず）
+        const debugKey = new Request('/saver/debug-log');
+        const debugRes = await cache.match(debugKey);
+        if (debugRes) {
+            const debugJson = await debugRes.json();
+            document.getElementById('debug-content').textContent = JSON.stringify(debugJson, null, 2);
+        }
+
         // ★ 同じ絶対パスのRequestオブジェクトで一致させる
         const cacheKey = new Request('/saver/latest-file');
         const res = await cache.match(cacheKey);
@@ -150,6 +164,12 @@ window.addEventListener('load', async () => {
             const file = e.target.files[0];
             if (!file) return;
             displayFile(file);
+        };
+
+        document.getElementById('clear-debug-btn').onclick = async () => {
+            const cache = await caches.open('shared-file-cache');
+            await cache.delete(new Request('/saver/debug-log'));
+            document.getElementById('debug-content').textContent = '記録を消しました。';
         };
     </script>
 </body>
